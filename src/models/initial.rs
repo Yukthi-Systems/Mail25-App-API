@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2026 Yukthi Systems Private Limited
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 3
+ * as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * version 3 along with this program. If not, see
+ * <https://www.gnu.org/licenses/>.
+ */
+
+
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64_STANDARD};
 use std::env::var as env_var;
 
@@ -11,6 +29,9 @@ pub struct PgSettings {
     pub recycle_timeout: u64,
     pub warm_pool: bool,
     pub warm_pool_size: usize,
+    pub ssl_accept_invalid_certs: bool,
+    pub ssl_accept_invalid_hostnames: bool,
+    pub ssl_root_cert_path: Option<String>,
 }
 
 
@@ -84,6 +105,27 @@ impl PgSettings {
             .ok()
             .and_then(|s| s.parse().ok())
             .expect("PG_POOL_WARM_POOL_SIZE must be a positive integer of type usize");
+        let ssl_accept_invalid_certs = env_var("PG_SSL_ACCEPT_INVALID_CERTS")
+            .ok()
+            .map(|s| s.to_lowercase())
+            .map(|s| match s.as_str() {
+                "true" => true,
+                "false" => false,
+                _ => panic!("PG_SSL_ACCEPT_INVALID_CERTS must be true or false"),
+            })
+            .unwrap_or(false);
+        let ssl_accept_invalid_hostnames = env_var("PG_SSL_ACCEPT_INVALID_HOSTNAMES")
+            .ok()
+            .map(|s| s.to_lowercase())
+            .map(|s| match s.as_str() {
+                "true" => true,
+                "false" => false,
+                _ => panic!("PG_SSL_ACCEPT_INVALID_HOSTNAMES must be true or false"),
+            })
+            .unwrap_or(false);
+        let ssl_root_cert_path = env_var("PG_SSL_ROOT_CERT_PATH")
+            .ok()
+            .filter(|s| !s.trim().is_empty());
 
         // Warm pool size can not go above 128 (if warm pool is enabled)
         if warm_pool_size > max_pool_size {
@@ -102,6 +144,9 @@ impl PgSettings {
             recycle_timeout,
             warm_pool,
             warm_pool_size,
+            ssl_accept_invalid_certs,
+            ssl_accept_invalid_hostnames,
+            ssl_root_cert_path,
         }
     }
 }

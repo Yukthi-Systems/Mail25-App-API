@@ -1,0 +1,21 @@
+services:
+  mail25-app-cache:
+    image: redis:7
+    container_name: mail25-app-cache
+
+    command: redis-server --requirepass "Cats-Rule"
+
+    networks:
+      - mail25-app-network
+
+    # ports:
+    #  - "127.0.0.1:6379:6379"
+
+    restart: always
+
+
+networks:
+  mail25-app-network:
+    external: true
+
+# docker network create mail25-app-network

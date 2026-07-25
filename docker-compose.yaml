@@ -1,0 +1,56 @@
+services:
+  mail25-app-api:
+    image: rjyspl/mail25-app-api:latest
+    container_name: mail25-app-api
+
+    environment:
+      - TZ=Asia/Kolkata
+      - ALLOWED_ORIGINS=*
+
+      # Logging and Runtime
+      - ENABLE_LOGGING=True
+      - RUST_LOG=rust_api=TRACE
+      - API_WORKERS_COUNT=8
+
+      # PostgreSQL Database
+      - POSTGRES_DB_URL=postgres://user:pass@0.0.0.0:1234/dbname?sslmode=require
+      - PG_POOL_MAX_SIZE=20
+      - PG_CONN_TIMEOUT=10
+      - PG_POOL_WAIT_TIMEOUT=30
+      - PG_POOL_NEW_CONNECTION_TIMEOUT=5
+      - PG_POOL_RECYCLE_TIMEOUT=1800
+      - PG_POOL_WARM_POOL=True
+      - PG_POOL_WARM_POOL_SIZE=20
+      - PG_SSL_ACCEPT_INVALID_CERTS=False
+      - PG_SSL_ACCEPT_INVALID_HOSTNAMES=False
+      - PG_SSL_ROOT_CERT_PATH=/ca.crt
+
+      # RMQ Message Queue
+      - RABBITMQ_DOMAIN=<your-rabbitmq-domain>
+      - RABBITMQ_USER_NAME=<your-rabbitmq-username>
+      - RABBITMQ_PASSWORD=<your-rabbitmq-password>
+      - RABBITMQ_VIRTUAL_HOST=<your-virtual-host>
+      - RABBITMQ_EXCHANGE_NAME=amq.default
+      - RABBITMQ_ROUTING_KEY=<your-routing-key>
+
+      # SSO API Configuration
+      - SSO_API_BASE_URL=https://<your-sso-domain>
+      - SSO_API_KEY=<your-sso-api-key>
+
+      # Redis Cache
+      - REDIS_URL=redis://:Cats-Rule@mail25-app-cache:6379
+
+    volumes:
+      - /etc/phoenix-tls/ca.crt:/ca.crt:ro
+
+    ports:
+      - "127.0.0.1:8083:8686"
+
+    networks:
+      - mail25-app-network
+
+    restart: always
+
+networks:
+  mail25-app-network:
+    external: true

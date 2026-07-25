@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2026 Yukthi Systems Private Limited
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 3
+ * as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * version 3 along with this program. If not, see
+ * <https://www.gnu.org/licenses/>.
+ */
+
+
 use crate::database::user::{get_user_by_email, create_app_session, delete_app_session, identity_checks, replace_fcm_token, validate_and_update_session};
 use crate::cache::handler::{set_redis_cache, delete_redis_cache, get_redis_cache};
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, delete, get, patch, post, web};
