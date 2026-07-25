@@ -1,4 +1,4 @@
-name: Go CI
+name: Mail 25 App API
 
 on:
   push:
