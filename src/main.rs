@@ -64,6 +64,13 @@ async fn main() -> std::io::Result<()> {
                 )
             )
             .service(
+                actix_scope("/user")
+                .wrap(from_fn(middleware::auth::auth_check))
+                .service(user::get_identity)
+                // .service(user::update_identity)
+                // .service(user::update_password)
+            )
+            .service(
                 actix_scope("/mailbox/session")
                 .wrap(from_fn(middleware::auth::auth_check))
                 .service(mailbox::get_all_mailbox_client_sessions)
@@ -96,7 +103,6 @@ async fn main() -> std::io::Result<()> {
             //     .service(totp::create_totp)
             //     .service(totp::edit_totp)
             // )
-            // TODO: ID updates like name, password, etc
     })
     .bind(("0.0.0.0", 8686))?
     .workers(env_var("API_WORKERS_COUNT").unwrap_or("4".to_string()).parse().unwrap())

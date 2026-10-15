@@ -16,7 +16,7 @@
  */
 
 
-use crate::database::user::{get_user_by_email, create_app_session, delete_app_session, identity_checks, replace_fcm_token, validate_and_update_session};
+use crate::database::user::{get_user_by_email, create_app_session, delete_app_session, identity_checks, replace_fcm_token, validate_and_update_session, get_full_identity};
 use crate::cache::handler::{set_redis_cache, delete_redis_cache, get_redis_cache};
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, delete, get, patch, post, web};
 use crate::handlers::rmq::send_notification_to_rmq;
@@ -219,4 +219,16 @@ pub async fn update_fcm_token(request: HttpRequest, state: web::Data<AppState>, 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "message": "FCM token updated successfully"
     })))
+}
+
+
+#[get("/identity")]
+pub async fn get_identity(request: HttpRequest, state: web::Data<AppState>) -> ApiResponse {
+    // Get SessionUser from request extensions
+    let ext = request.extensions();
+    let session_user = ext.get::<SessionUser>().unwrap();
+
+    let identity_info = get_full_identity(&state.pg_pool, &session_user.email).await?;
+
+    Ok(HttpResponse::Ok().json(identity_info))
 }

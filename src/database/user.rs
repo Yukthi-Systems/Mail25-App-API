@@ -16,7 +16,7 @@
  */
 
 
-use crate::models::user::{UserInfo, SessionUser};
+use crate::models::user::{UserInfo, SessionUser, FullIdentity};
 use deadpool_postgres::{
     PoolError as PgError,
     Pool as PgPool
@@ -268,4 +268,39 @@ pub async fn validate_and_update_session(db_pool: &PgPool, session_id: &uuid::Uu
         .await?;
 
     Ok(row.is_some())
+}
+
+
+pub async fn get_full_identity(db_pool: &PgPool, email: &str) -> Result<FullIdentity, PgError> {
+    let client = db_pool.get().await?;
+
+    let row = client
+        .query_one(
+            r#"
+            SELECT
+                eid.email,
+                eid.first_name,
+                eid.last_name,
+                eid.primary_phone,
+                eid.secondary_email,
+                eid.is_app_2fa_enabled,
+                eid.is_sms_2fa_enabled,
+                eid.is_email_2fa_enabled,
+                eid.is_password_expired,
+                eid.password_updated_at,
+                eid.updated_at,
+                dep.department_name,
+                dep.details AS department_details
+            FROM email_identities AS eid
+            LEFT JOIN departments AS dep
+                ON dep.department_id = eid.department_id
+            WHERE eid.email = $1
+              AND eid.is_enabled = TRUE
+              AND eid.is_password_expired = FALSE
+            "#,
+            &[&email],
+        )
+        .await?;
+
+    Ok(FullIdentity::from(row))
 }

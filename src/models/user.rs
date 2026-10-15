@@ -73,6 +73,28 @@ pub struct UserInfo {
 }
 
 
+#[derive(Serialize)]
+pub struct FullIdentity {
+    pub email: String,
+    pub first_name: String,
+    pub last_name: Option<String>,
+
+    pub primary_phone: String,
+    pub secondary_email: Option<String>,
+
+    pub is_app_2fa_enabled: bool,
+    pub is_sms_2fa_enabled: bool,
+    pub is_email_2fa_enabled: bool,
+    pub is_password_expired: bool,
+
+    pub password_updated_at: chrono::DateTime<chrono::Utc>,
+    pub identity_updated_at: chrono::DateTime<chrono::Utc>,
+
+    pub department_name: Option<String>,
+    pub department_details: Option<serde_json::Value>,
+}
+
+
 // ------- Implementations ------- //
 
 
@@ -150,6 +172,31 @@ impl From<Row> for UserInfo {
             organization_name: row.get("organization_name"),
 
             restriction_policy,
+        }
+    }
+}
+
+
+impl From<Row> for FullIdentity {
+    fn from(row: Row) -> Self {
+        FullIdentity {
+            email: row.get("email"),
+            first_name: row.get("first_name"),
+            last_name: row.get("last_name"),
+
+            primary_phone: row.get("primary_phone"),
+            secondary_email: row.get("secondary_email"),
+
+            is_app_2fa_enabled: row.get("is_app_2fa_enabled"),
+            is_sms_2fa_enabled: row.get("is_sms_2fa_enabled"),
+            is_email_2fa_enabled: row.get("is_email_2fa_enabled"),
+
+            is_password_expired: row.get("is_password_expired"),
+            password_updated_at: row.get("password_updated_at"),
+            identity_updated_at: row.get("identity_updated_at"),
+
+            department_name: row.get("department_name"),
+            department_details: row.get("department_details"),
         }
     }
 }
