@@ -347,3 +347,34 @@ pub async fn update_identity_info(
 
     Ok(())
 }
+
+
+pub async fn update_identity_password(
+    db_pool: &PgPool,
+    email: &str,
+    bcrypt_hash: &str,
+    ssha1_hash: &str,
+) -> Result<(), PgError> {
+    let client = db_pool.get().await?;
+
+    client
+        .execute(
+            r#"
+            UPDATE email_identities
+            SET password_bcrypt = $1,
+                password_hash_ssha1 = $2,
+                is_password_expired = FALSE,
+                updated_at = CURRENT_TIMESTAMP,
+                password_updated_at = CURRENT_TIMESTAMP
+            WHERE email = $3
+            "#,
+            &[
+                &bcrypt_hash,
+                &ssha1_hash,
+                &email,
+            ],
+        )
+        .await?;
+
+    Ok(())
+}

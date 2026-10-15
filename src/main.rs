@@ -68,7 +68,7 @@ async fn main() -> std::io::Result<()> {
                 .wrap(from_fn(middleware::auth::auth_check))
                 .service(user::get_identity)
                 .service(user::update_identity)
-                // .service(user::update_password)
+                .service(user::update_password)
             )
             .service(
                 actix_scope("/mailbox/session")

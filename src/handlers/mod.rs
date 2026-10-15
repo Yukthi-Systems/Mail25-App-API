@@ -17,4 +17,5 @@
 
 
 pub mod sso_api;
+pub mod auth;
 pub mod rmq;

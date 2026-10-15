@@ -16,11 +16,12 @@
  */
 
 
-use crate::database::user::{get_user_by_email, create_app_session, delete_app_session, identity_checks, replace_fcm_token, validate_and_update_session, get_full_identity, update_identity_info};
+use crate::database::user::{get_user_by_email, create_app_session, delete_app_session, identity_checks, replace_fcm_token, validate_and_update_session, get_full_identity, update_identity_info, update_identity_password};
 use crate::cache::handler::{set_redis_cache, delete_redis_cache, get_redis_cache};
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, delete, get, patch, post, web};
 use crate::handlers::rmq::send_notification_to_rmq;
 use crate::models::errors::{ApiResponse, AppError};
+use crate::handlers::auth::PasswordHasher;
 use crate::models::user::SessionUser;
 use serde::{Deserialize, Serialize};
 use crate::state::AppState;
@@ -270,5 +271,33 @@ pub async fn update_identity(request: HttpRequest, body: web::Json<UpdateIdentit
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "message": "Identity updated successfully"
+    })))
+}
+
+
+#[patch("/password")]
+pub async fn update_password(request: HttpRequest, body: web::Json<PasswordHasher>, state: web::Data<AppState>) -> ApiResponse {
+    // Get SessionUser from request extensions
+    let ext = request.extensions();
+    let session_user = ext.get::<SessionUser>().unwrap();
+    let password_hasher = body.into_inner();
+
+    // Validate the new password before updating it in the database
+    password_hasher.validate()?;
+
+    let bcrypt_hash = password_hasher.generate_bcrypt_hash();
+    let ssha1_hash = password_hasher.generate_ssha1_hash();
+
+    // Update password in the database
+    update_identity_password(
+        &state.pg_pool,
+        &session_user.email,
+        &bcrypt_hash,
+        &ssha1_hash,
+    )
+    .await?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "message": "Password updated successfully"
     })))
 }
