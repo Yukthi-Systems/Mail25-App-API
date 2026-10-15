@@ -16,7 +16,7 @@
  */
 
 
-use crate::database::user::{get_user_by_email, create_app_session, delete_app_session, identity_checks, replace_fcm_token, validate_and_update_session, get_full_identity};
+use crate::database::user::{get_user_by_email, create_app_session, delete_app_session, identity_checks, replace_fcm_token, validate_and_update_session, get_full_identity, update_identity_info};
 use crate::cache::handler::{set_redis_cache, delete_redis_cache, get_redis_cache};
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, delete, get, patch, post, web};
 use crate::handlers::rmq::send_notification_to_rmq;
@@ -59,6 +59,18 @@ struct ValidateSessionRequest {
     domain_name: String,
     phone_number: String,
     device_details: serde_json::Value,
+}
+
+
+// Struct for updating identity information request
+#[derive(Deserialize)]
+struct UpdateIdentityInfoRequest {
+    first_name: String,
+    last_name: String,
+    secondary_email: String,
+    enable_app_2fa: bool,
+    enable_sms_2fa: bool,
+    enable_email_2fa: bool,
 }
 
 
@@ -231,4 +243,32 @@ pub async fn get_identity(request: HttpRequest, state: web::Data<AppState>) -> A
     let identity_info = get_full_identity(&state.pg_pool, &session_user.email).await?;
 
     Ok(HttpResponse::Ok().json(identity_info))
+}
+
+
+#[post("/identity/update")]
+pub async fn update_identity(request: HttpRequest, body: web::Json<UpdateIdentityInfoRequest>, state: web::Data<AppState>) -> ApiResponse {
+    // Get SessionUser from request extensions
+    let ext = request.extensions();
+    let session_user = ext.get::<SessionUser>().unwrap();
+
+    // Note: Can not update or disable the 2FA methods for their own account, only enable them
+    // and also the user can not update the primary phone for their own account (Only Admins can)
+
+    // Update identity in the database
+    update_identity_info(
+        &state.pg_pool,
+        &session_user.email,
+        &body.first_name,
+        &body.last_name,
+        &body.secondary_email,
+        body.enable_app_2fa,
+        body.enable_sms_2fa,
+        body.enable_email_2fa,
+    )
+    .await?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "message": "Identity updated successfully"
+    })))
 }

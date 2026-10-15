@@ -304,3 +304,46 @@ pub async fn get_full_identity(db_pool: &PgPool, email: &str) -> Result<FullIden
 
     Ok(FullIdentity::from(row))
 }
+
+
+pub async fn update_identity_info(
+    db_pool: &PgPool,
+    email: &str,
+    first_name: &str,
+    last_name: &str,
+    secondary_email: &str,
+    enable_app_2fa: bool,
+    enable_sms_2fa: bool,
+    enable_email_2fa: bool,
+) -> Result<(), PgError> {
+    let client = db_pool.get().await?;
+
+    // Note: The users can only enable the 2FA methods for their own account, but not disable them
+
+    client
+        .execute(
+            r#"
+            UPDATE email_identities
+            SET first_name = $1,
+                last_name = $2,
+                secondary_email = $3,
+                is_app_2fa_enabled = CASE WHEN is_app_2fa_enabled = FALSE THEN $4 ELSE is_app_2fa_enabled END,
+                is_sms_2fa_enabled = CASE WHEN is_sms_2fa_enabled = FALSE THEN $5 ELSE is_sms_2fa_enabled END,
+                is_email_2fa_enabled = CASE WHEN is_email_2fa_enabled = FALSE THEN $6 ELSE is_email_2fa_enabled END,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE email = $7
+            "#,
+            &[
+                &first_name,
+                &last_name,
+                &secondary_email,
+                &enable_app_2fa,
+                &enable_sms_2fa,
+                &enable_email_2fa,
+                &email,
+            ],
+        )
+        .await?;
+
+    Ok(())
+}
