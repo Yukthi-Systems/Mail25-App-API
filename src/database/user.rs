@@ -288,7 +288,7 @@ pub async fn get_full_identity(db_pool: &PgPool, email: &str) -> Result<FullIden
                 eid.is_email_2fa_enabled,
                 eid.is_password_expired,
                 eid.password_updated_at,
-                eid.updated_at,
+                eid.updated_at AS identity_updated_at,
                 dep.department_name,
                 dep.details AS department_details
             FROM email_identities AS eid
