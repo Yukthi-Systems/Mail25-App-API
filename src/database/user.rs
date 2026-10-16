@@ -378,3 +378,41 @@ pub async fn update_identity_password(
 
     Ok(())
 }
+
+
+pub async fn get_full_app_info(db_pool: &PgPool, email: &str) -> Result<serde_json::Value, PgError> {
+    let client = db_pool.get().await?;
+
+    let row = client
+        .query_one(
+            r#"
+            SELECT mail25_app_info FROM email_identities
+            WHERE email = $1
+            "#,
+            &[&email],
+        )
+        .await?;
+
+    Ok(row.get("mail25_app_info"))
+}
+
+
+pub async fn replace_app_info(db_pool: &PgPool, email: &str, mail25_app_info: &serde_json::Value) -> Result<(), PgError> {
+    let client = db_pool.get().await?;
+
+    client
+        .execute(
+            r#"
+            UPDATE email_identities
+            SET mail25_app_info = $1
+            WHERE email = $2
+            "#,
+            &[
+                &mail25_app_info,
+                &email,
+            ],
+        )
+        .await?;
+
+    Ok(())
+}

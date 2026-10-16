@@ -16,9 +16,9 @@
  */
 
 
-use crate::database::user::{get_user_by_email, create_app_session, delete_app_session, identity_checks, replace_fcm_token, validate_and_update_session, get_full_identity, update_identity_info, update_identity_password};
-use crate::cache::handler::{set_redis_cache, delete_redis_cache, get_redis_cache};
+use crate::database::user::{get_user_by_email, create_app_session, delete_app_session, identity_checks, replace_fcm_token, validate_and_update_session, get_full_identity, update_identity_info, update_identity_password, get_full_app_info, replace_app_info};
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, delete, get, patch, post, web};
+use crate::cache::handler::{set_redis_cache, delete_redis_cache, get_redis_cache};
 use crate::handlers::rmq::send_notification_to_rmq;
 use crate::models::errors::{ApiResponse, AppError};
 use crate::handlers::auth::PasswordHasher;
@@ -299,5 +299,38 @@ pub async fn update_password(request: HttpRequest, body: web::Json<PasswordHashe
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "message": "Password updated successfully"
+    })))
+}
+
+
+#[get("/app-info")]
+pub async fn get_app_info(request: HttpRequest, state: web::Data<AppState>) -> ApiResponse {
+    // Get SessionUser from request extensions
+    let ext = request.extensions();
+    let session_user = ext.get::<SessionUser>().unwrap();
+
+    let app_info = get_full_app_info(&state.pg_pool, &session_user.email).await?;
+
+    Ok(HttpResponse::Ok().json(app_info))
+}
+
+
+#[post("/app-info")]
+pub async fn update_app_info(request: HttpRequest, body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> ApiResponse {
+    // Get SessionUser from request extensions
+    let ext = request.extensions();
+    let session_user = ext.get::<SessionUser>().unwrap();
+    let new_app_info = body.into_inner(); 
+
+    // Update app info in the database
+    replace_app_info(
+        &state.pg_pool,
+        &session_user.email,
+        &new_app_info
+    )
+    .await?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "message": "App info updated successfully"
     })))
 }

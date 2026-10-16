@@ -67,6 +67,8 @@ async fn main() -> std::io::Result<()> {
                 actix_scope("/user")
                 .wrap(from_fn(middleware::auth::auth_check))
                 .service(user::get_identity)
+                .service(user::get_app_info)
+                .service(user::update_app_info)
                 .service(user::update_identity)
                 .service(user::update_password)
             )
@@ -95,14 +97,6 @@ async fn main() -> std::io::Result<()> {
                 .wrap(from_fn(middleware::auth::auth_check))
                 .service(maintenance::get_maintenance_list)
             )
-            // .service(
-            //     actix_scope("/totp")
-            //     .wrap(from_fn(middleware::auth::auth_check))
-            //     .service(totp::list_all_totp)
-            //     .service(totp::delete_totp)
-            //     .service(totp::create_totp)
-            //     .service(totp::edit_totp)
-            // )
     })
     .bind(("0.0.0.0", 8686))?
     .workers(env_var("API_WORKERS_COUNT").unwrap_or("4".to_string()).parse().unwrap())
