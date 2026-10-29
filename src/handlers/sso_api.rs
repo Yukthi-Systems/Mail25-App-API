@@ -50,3 +50,33 @@ pub async fn clear_mailbox_session_cache(sso_api_settings: &SSOApiSettings, orig
         Err(AppError::Unprocessable("Failed to clear mailbox session cache".to_string()))
     }
 }
+
+
+/// Function to update the SSO Password
+pub async fn update_sso_password(sso_api_settings: &SSOApiSettings, email: &str, new_raw_password: &str) -> Result<(), AppError> {
+    let client = Client::new();
+
+    let sso_api_url = format!(
+        "{}/internal/password/reset",
+        sso_api_settings.base_url
+    );
+
+    let response = client.post(&sso_api_url)
+        .header("X-API-Key", &sso_api_settings.api_key)
+        .header("content-type", "application/json")
+        .json(&serde_json::json!({
+            "email": email,
+            "new_raw_password": new_raw_password
+        }))
+        .send()
+        .await?;
+
+    if response.status().is_success() {
+        log::info!("Successfully updated SSO password for Email: {}", email);
+        Ok(())
+    } else {
+        let error_text = response.text().await?;
+        log::error!("Failed to update SSO password for Email: {}. Error: {}", email, error_text);
+        Err(AppError::Unprocessable("Failed to update SSO password".to_string()))
+    }
+}

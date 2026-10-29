@@ -18,8 +18,17 @@ impl PasswordHasher {
         STANDARD.decode(&self.encoded_password).unwrap_or_default()
     }
 
+    /// Returns the raw password, decoded from Base64
+    pub fn raw_password(&self) -> String {
+        String::from_utf8(self.password_bytes()).unwrap_or_default()
+    }
+
     /// Generates a bcrypt hash of the password and returns it as a string
     pub fn generate_bcrypt_hash(&self) -> String {
+        if self.password_bytes().is_empty() {
+            return String::new();
+        }
+
         bcrypt::hash(self.password_bytes(), bcrypt::DEFAULT_COST).unwrap()
     }
 
@@ -53,7 +62,7 @@ impl PasswordHasher {
             return Err(AppError::Unprocessable("Password cannot be empty".into()));
         }
 
-        let password_string = String::from_utf8(password).unwrap_or_default();
+        let password_string = self.raw_password();
 
         // Password should be at least 8 characters long
         if password_string.len() < 8 {

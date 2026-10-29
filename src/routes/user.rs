@@ -21,6 +21,7 @@ use actix_web::{HttpMessage, HttpRequest, HttpResponse, delete, get, patch, post
 use crate::cache::handler::{set_redis_cache, delete_redis_cache, get_redis_cache};
 use crate::handlers::rmq::send_notification_to_rmq;
 use crate::models::errors::{ApiResponse, AppError};
+use crate::handlers::sso_api::update_sso_password;
 use crate::handlers::auth::PasswordHasher;
 use crate::models::user::SessionUser;
 use serde::{Deserialize, Serialize};
@@ -287,6 +288,7 @@ pub async fn update_password(request: HttpRequest, body: web::Json<PasswordHashe
 
     let bcrypt_hash = password_hasher.generate_bcrypt_hash();
     let ssha1_hash = password_hasher.generate_ssha1_hash();
+    let raw_password = password_hasher.raw_password();
 
     // Update password in the database
     update_identity_password(
@@ -294,6 +296,14 @@ pub async fn update_password(request: HttpRequest, body: web::Json<PasswordHashe
         &session_user.email,
         &bcrypt_hash,
         &ssha1_hash,
+    )
+    .await?;
+
+    // Update the SSO password as well
+    update_sso_password(
+        &state.config.sso_api_settings,
+        &session_user.email,
+        &raw_password,
     )
     .await?;
 
